@@ -14,6 +14,11 @@
       "key": "herokuUrl",
       "value": "https://your-app-name.herokuapp.com",
       "type": "string"
+    },
+    {
+      "key": "renderUrl",
+      "value": "https://sfclaudesnowintegration.onrender.com",
+      "type": "string"
     }
   ],
   "item": [
@@ -239,6 +244,94 @@
               "path": ["api", "incident", "create"]
             },
             "description": "Create incident analyzing against custom repository"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Render.com Deployment",
+      "item": [
+        {
+          "name": "Render - Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{renderUrl}}/api/health",
+              "host": ["{{renderUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Check if the Render.com deployment is healthy"
+          },
+          "response": []
+        },
+        {
+          "name": "Render - Create Incident (Local Mode)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.LimitException: Too many SOQL queries: 101. Class.AccountDataProcessor.processRecords: line 156, column 1\",\n  \"caller\": \"developer@company.com\",\n  \"localOnly\": true\n}"
+            },
+            "url": {
+              "raw": "{{renderUrl}}/api/incident/create",
+              "host": ["{{renderUrl}}"],
+              "path": ["api", "incident", "create"]
+            },
+            "description": "Create incident on Render.com deployment in local mode (saves report without ServiceNow)"
+          },
+          "response": []
+        },
+        {
+          "name": "Render - Create ServiceNow Incident",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.NullPointerException: Attempt to de-reference a null object. Class.AccountHandler.processAccount: line 45, column 12\",\n  \"caller\": \"developer@company.com\"\n}"
+            },
+            "url": {
+              "raw": "{{renderUrl}}/api/incident/create",
+              "host": ["{{renderUrl}}"],
+              "path": ["api", "incident", "create"]
+            },
+            "description": "Create incident in ServiceNow from Render.com deployment (requires SNOW_* environment variables)"
+          },
+          "response": []
+        },
+        {
+          "name": "Render - Analyze Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.DmlException: Insert failed. First exception on row 0; first error: REQUIRED_FIELD_MISSING, Required fields are missing: [Name]\"\n}"
+            },
+            "url": {
+              "raw": "{{renderUrl}}/api/analyze",
+              "host": ["{{renderUrl}}"],
+              "path": ["api", "analyze"]
+            },
+            "description": "Analyze error using Render.com deployment"
           },
           "response": []
         }
