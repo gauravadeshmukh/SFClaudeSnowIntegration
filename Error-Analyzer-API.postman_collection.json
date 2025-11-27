@@ -1,0 +1,290 @@
+{
+  "info": {
+    "name": "Error Analyzer API",
+    "description": "API collection for Error Analyzer - Analyze errors and create ServiceNow incidents",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "herokuUrl",
+      "value": "https://your-app-name.herokuapp.com",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Check if the API is running and healthy"
+          },
+          "response": []
+        },
+        {
+          "name": "API Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "status"]
+            },
+            "description": "Get API configuration and available endpoints"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Analysis",
+      "item": [
+        {
+          "name": "Analyze Apex NullPointerException",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.NullPointerException: Attempt to de-reference a null object. Class.AccountHandler.processAccount: line 45, column 12\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analyze"]
+            },
+            "description": "Analyze an Apex NullPointerException error"
+          },
+          "response": []
+        },
+        {
+          "name": "Analyze Governor Limit Exception",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.LimitException: Too many SOQL queries: 101. Class.AccountDataProcessor.processRecords: line 156, column 1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analyze"]
+            },
+            "description": "Analyze a Salesforce governor limit exception"
+          },
+          "response": []
+        },
+        {
+          "name": "Analyze JavaScript TypeError",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"TypeError: Cannot read property 'name' of undefined\\n    at AccountController.getDetails (AccountController.js:34:21)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analyze"]
+            },
+            "description": "Analyze a JavaScript TypeError"
+          },
+          "response": []
+        },
+        {
+          "name": "Analyze with Custom Repository",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.DmlException: Insert failed. First exception on row 0\",\n  \"repo\": \"https://github.com/yourorg/yourrepo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analyze"]
+            },
+            "description": "Analyze error against a custom GitHub repository"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Incident Creation",
+      "item": [
+        {
+          "name": "Create Incident (Local Mode)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.NullPointerException: Attempt to de-reference a null object. Class.AccountHandler.processAccount: line 45, column 12\",\n  \"caller\": \"developer@company.com\",\n  \"localOnly\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "create"]
+            },
+            "description": "Create incident in local mode (saves report file without ServiceNow)"
+          },
+          "response": []
+        },
+        {
+          "name": "Create ServiceNow Incident",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.LimitException: Too many SOQL queries: 101. Class.AccountDataProcessor.processRecords: line 156, column 1\",\n  \"caller\": \"developer@company.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "create"]
+            },
+            "description": "Create incident in ServiceNow with error analysis attached"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Incident with Assignment Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.DmlException: Insert failed. First exception on row 0; first error: REQUIRED_FIELD_MISSING, Required fields are missing: [Name]\",\n  \"caller\": \"developer@company.com\",\n  \"assignmentGroup\": \"your-group-sys-id\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "create"]
+            },
+            "description": "Create incident with specific assignment group"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Incident - Custom Repository",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"TypeError: Cannot read property 'value' of null\",\n  \"caller\": \"developer@company.com\",\n  \"repo\": \"https://github.com/yourorg/yourrepo\",\n  \"localOnly\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "create"]
+            },
+            "description": "Create incident analyzing against custom repository"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Scenarios (Testing)",
+      "item": [
+        {
+          "name": "Test Missing Error Field",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caller\": \"developer@company.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "create"]
+            },
+            "description": "Test error handling when error field is missing (should return 400)"
+          },
+          "response": []
+        },
+        {
+          "name": "Test Invalid Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/invalid",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invalid"]
+            },
+            "description": "Test 404 handling for invalid endpoint"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

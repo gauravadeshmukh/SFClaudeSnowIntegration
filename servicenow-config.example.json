@@ -1,0 +1,21 @@
+{
+  "instanceUrl": "dev12345.service-now.com",
+  "username": "your.username",
+  "password": "your_password",
+  "apiVersion": "v1",
+  "defaultAssignmentGroup": "",
+  "defaultCategory": "Software",
+  "defaultSubcategory": "Application Error",
+  "comments": {
+    "instanceUrl": "Your ServiceNow instance URL (without https://)",
+    "username": "Your ServiceNow username",
+    "password": "Your ServiceNow password or API token",
+    "apiVersion": "ServiceNow API version (default: v1)",
+    "defaultAssignmentGroup": "Optional: Default assignment group sys_id",
+    "setup": [
+      "1. Copy this file to servicenow-config.json",
+      "2. Fill in your ServiceNow credentials",
+      "3. Keep servicenow-config.json secure and do not commit it to source control"
+    ]
+  }
+}

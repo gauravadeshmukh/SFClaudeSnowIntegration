@@ -1,0 +1,46 @@
+{
+  "name": "Error Analyzer API",
+  "description": "Intelligent error analysis system that analyzes errors against GitHub codebases and creates ServiceNow incidents",
+  "repository": "https://github.com/yourusername/error-analyzer",
+  "logo": "https://raw.githubusercontent.com/yourusername/error-analyzer/main/logo.png",
+  "keywords": [
+    "error-analysis",
+    "servicenow",
+    "github",
+    "salesforce",
+    "apex",
+    "debugging",
+    "api"
+  ],
+  "success_url": "/api/health",
+  "env": {
+    "DEFAULT_REPO": {
+      "description": "Default GitHub repository URL to analyze errors against",
+      "value": "https://github.com/gauravadeshmukh/agentforcedemo/tree/master",
+      "required": false
+    },
+    "SNOW_INSTANCE": {
+      "description": "ServiceNow instance URL (e.g., dev12345.service-now.com)",
+      "required": false
+    },
+    "SNOW_USERNAME": {
+      "description": "ServiceNow username",
+      "required": false
+    },
+    "SNOW_PASSWORD": {
+      "description": "ServiceNow password or API token",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
