@@ -15,7 +15,7 @@ class ErrorAnalyzerAPI {
   constructor(config = {}) {
     this.port = config.port || 3000;
     this.host = config.host || 'localhost';
-    this.defaultRepo = config.defaultRepo || 'https://github.com/gauravadeshmukh/agentforcedemo/tree/master';
+    this.defaultRepo = process.env.DEFAULT_REPO || 'https://github.com/gauravadeshmukh/agentforcedemo/tree/master';
     this.snowConfigPath = config.snowConfigPath || 'servicenow-config.json';
     this.enableCors = config.enableCors !== false;
 
