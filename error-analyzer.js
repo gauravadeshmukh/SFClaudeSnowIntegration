@@ -212,7 +212,7 @@ class ErrorAnalyzer {
    */
   async findRelevantFiles(errorInfo, repoTree) {
     const relevantFiles = [];
-
+    console.log('repoTree***',repoTree);
     // Priority 1: Direct file name match (exact match)
     if (errorInfo.fileName) {
       for (const item of repoTree.tree) {
@@ -229,6 +229,7 @@ class ErrorAnalyzer {
     // Priority 2: Class name match (for Apex/Java)
     if (errorInfo.className && relevantFiles.length === 0) {
       for (const item of repoTree.tree) {
+        console.log('item***',item);
         if (item.type !== 'blob') continue;
         const path = item.path;
         const fileName = path.split('/').pop();
@@ -243,6 +244,8 @@ class ErrorAnalyzer {
 
     // Priority 3: Method/Function name match (if class not found)
     if (errorInfo.methodName && relevantFiles.length === 0) {
+        console.log('methodName***',methodName);
+
       // Only search if we have a method name but no file yet
       for (const item of repoTree.tree) {
         if (item.type !== 'blob') continue;

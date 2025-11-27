@@ -1,5 +1,6 @@
 # ServiceNow Configuration (contains credentials)
 servicenow-config.json
+.env
 
 # Generated error analysis reports
 error_analysis_*.txt
