@@ -2,9 +2,10 @@ services:
   - type: web
     name: error-analyzer-api
     env: node
-    plan: free
+    plan: starter
     buildCommand: echo "No build needed - using Node.js built-ins only"
     startCommand: node api-server.js
+    region: oregon
     envVars:
       - key: NODE_VERSION
         value: 18.0.0
