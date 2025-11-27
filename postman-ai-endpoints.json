@@ -1,0 +1,417 @@
+{
+  "info": {
+    "name": "Error Analyzer - AI Endpoints",
+    "description": "Claude AI-powered error analysis REST API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "deployedUrl",
+      "value": "https://your-app.onrender.com",
+      "type": "string",
+      "disabled": true
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Check if the API server is running and view AI configuration status"
+          },
+          "response": []
+        },
+        {
+          "name": "API Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "status"]
+            },
+            "description": "Get API configuration and available endpoints"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "status"]
+            },
+            "description": "Check AI analyzer status, capabilities, and pricing information"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Analysis Endpoints",
+      "item": [
+        {
+          "name": "AI Analyze - Salesforce NullPointerException",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.NullPointerException: Attempt to de-reference a null object. Class.AccountHandler.processAccount: line 45, column 12\",\n  \"repo\": \"https://github.com/gauravadeshmukh/agentforcedemo/tree/master\",\n  \"filePath\": \"force-app/main/default/classes/AccountHandler.cls\",\n  \"codeSnippet\": {\n    \"errorLine\": 45,\n    \"startLine\": 40,\n    \"endLine\": 50,\n    \"code\": [\n      { \"lineNumber\": 40, \"content\": \"public void processAccount(Id accountId) {\" },\n      { \"lineNumber\": 41, \"content\": \"  Account acc = [SELECT Id, Name FROM Account WHERE Id = :accountId];\" },\n      { \"lineNumber\": 42, \"content\": \"  Contact primaryContact = acc.Primary_Contact__r;\" },\n      { \"lineNumber\": 45, \"content\": \"  String email = primaryContact.Email;\", \"isError\": true },\n      { \"lineNumber\": 48, \"content\": \"  sendEmail(email);\" },\n      { \"lineNumber\": 50, \"content\": \"}\" }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "analyze"]
+            },
+            "description": "Pure AI-powered analysis of a Salesforce NullPointerException with code context"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Analyze - SOQL Limit Exception",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.LimitException: Too many SOQL queries: 101. Class.AccountDataProcessor.processRecords: line 156, column 1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "analyze"]
+            },
+            "description": "AI analysis of SOQL governor limit exception without code snippet (minimal context)"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Analyze - JavaScript TypeError",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"TypeError: Cannot read property 'name' of undefined at getUserName (userService.js:23:15)\",\n  \"filePath\": \"src/services/userService.js\",\n  \"codeSnippet\": {\n    \"errorLine\": 23,\n    \"startLine\": 20,\n    \"endLine\": 25,\n    \"code\": [\n      { \"lineNumber\": 20, \"content\": \"function getUserName(user) {\" },\n      { \"lineNumber\": 21, \"content\": \"  const profile = user.profile;\" },\n      { \"lineNumber\": 23, \"content\": \"  return profile.name;\", \"isError\": true },\n      { \"lineNumber\": 24, \"content\": \"}\" }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "analyze"]
+            },
+            "description": "AI analysis of JavaScript TypeError with code context"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Fix Generation",
+      "item": [
+        {
+          "name": "AI Fix - NullPointerException",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.NullPointerException: Attempt to de-reference a null object. Class.AccountHandler.processAccount: line 45\",\n  \"filePath\": \"force-app/main/default/classes/AccountHandler.cls\",\n  \"codeSnippet\": {\n    \"errorLine\": 45,\n    \"code\": [\n      { \"lineNumber\": 40, \"content\": \"public void processAccount(Id accountId) {\" },\n      { \"lineNumber\": 41, \"content\": \"  Account acc = [SELECT Id, Name FROM Account WHERE Id = :accountId];\" },\n      { \"lineNumber\": 42, \"content\": \"  Contact primaryContact = acc.Primary_Contact__r;\" },\n      { \"lineNumber\": 45, \"content\": \"  String email = primaryContact.Email;\", \"isError\": true },\n      { \"lineNumber\": 48, \"content\": \"  sendEmail(email);\" },\n      { \"lineNumber\": 50, \"content\": \"}\" }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/fix",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "fix"]
+            },
+            "description": "Generate corrected code with explanations for NullPointerException"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Fix - JavaScript TypeError",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"TypeError: Cannot read property 'name' of undefined\",\n  \"filePath\": \"src/services/userService.js\",\n  \"codeSnippet\": {\n    \"errorLine\": 23,\n    \"code\": [\n      { \"lineNumber\": 20, \"content\": \"function getUserName(user) {\" },\n      { \"lineNumber\": 21, \"content\": \"  const profile = user.profile;\" },\n      { \"lineNumber\": 23, \"content\": \"  return profile.name;\", \"isError\": true },\n      { \"lineNumber\": 24, \"content\": \"}\" }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/fix",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "fix"]
+            },
+            "description": "Generate fix code with null safety for JavaScript TypeError"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Fix - SOQL in Loop",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.LimitException: Too many SOQL queries: 101. Class.AccountDataProcessor.processRecords: line 156\",\n  \"filePath\": \"force-app/main/default/classes/AccountDataProcessor.cls\",\n  \"codeSnippet\": {\n    \"errorLine\": 156,\n    \"code\": [\n      { \"lineNumber\": 150, \"content\": \"public void processRecords(List<Account> accounts) {\" },\n      { \"lineNumber\": 151, \"content\": \"  for (Account acc : accounts) {\" },\n      { \"lineNumber\": 152, \"content\": \"    List<Contact> contacts = [SELECT Id FROM Contact WHERE AccountId = :acc.Id];\" },\n      { \"lineNumber\": 156, \"content\": \"    List<Opportunity> opps = [SELECT Id FROM Opportunity WHERE AccountId = :acc.Id];\", \"isError\": true },\n      { \"lineNumber\": 160, \"content\": \"  }\" },\n      { \"lineNumber\": 161, \"content\": \"}\" }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/fix",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "fix"]
+            },
+            "description": "Generate bulkified code to fix SOQL-in-loop pattern"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Component Analysis",
+      "item": [
+        {
+          "name": "AI Components - SOQL Limit Impact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.LimitException: Too many SOQL queries: 101. Class.AccountDataProcessor.processRecords: line 156\",\n  \"repo\": \"https://github.com/gauravadeshmukh/agentforcedemo/tree/master\",\n  \"components\": [\n    {\n      \"path\": \"force-app/main/default/triggers/AccountTrigger.trigger\",\n      \"reason\": \"Calls AccountDataProcessor from trigger\"\n    },\n    {\n      \"path\": \"force-app/main/default/classes/AccountService.cls\",\n      \"reason\": \"Uses similar SOQL patterns\"\n    },\n    {\n      \"path\": \"force-app/main/default/classes/BatchAccountProcessor.cls\",\n      \"reason\": \"Batch processor for accounts\"\n    },\n    {\n      \"path\": \"force-app/main/default/classes/AccountTriggerHandler.cls\",\n      \"reason\": \"Trigger handler that orchestrates processing\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/components",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "components"]
+            },
+            "description": "Analyze how a SOQL limit error affects multiple related components"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Components - DML Exception Impact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.DmlException: Update failed. First exception on row 0; first error: REQUIRED_FIELD_MISSING, Required fields are missing: [Name]\",\n  \"components\": [\n    {\n      \"path\": \"AccountTrigger.trigger\",\n      \"reason\": \"Trigger that updates accounts\"\n    },\n    {\n      \"path\": \"AccountService.cls\",\n      \"reason\": \"Service class for account DML operations\"\n    },\n    {\n      \"path\": \"AccountValidator.cls\",\n      \"reason\": \"Validation logic for accounts\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/components",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "components"]
+            },
+            "description": "Analyze how a DML validation error affects validation and service classes"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Standard Endpoints (with AI)",
+      "item": [
+        {
+          "name": "Analyze (Dual-Mode)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.NullPointerException: Attempt to de-reference a null object. Class.AccountHandler.processAccount: line 45, column 12\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analyze"]
+            },
+            "description": "Standard analysis endpoint with AI + rule-based dual mode (AI if available, rule-based as fallback)"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Incident (with AI Analysis)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.LimitException: Too many SOQL queries: 101. Class.AccountDataProcessor.processRecords: line 156\",\n  \"caller\": \"developer@company.com\",\n  \"localOnly\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/incident/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "incident", "create"]
+            },
+            "description": "Create ServiceNow incident (or local report) with AI-powered analysis"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Scenarios",
+      "item": [
+        {
+          "name": "AI Analyze - Missing Error Field",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"repo\": \"https://github.com/owner/repo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "analyze"]
+            },
+            "description": "Test error handling when 'error' field is missing (should return 400)"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Fix - Missing Code Snippet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.NullPointerException\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/fix",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "fix"]
+            },
+            "description": "Test error handling when 'codeSnippet' is missing (should return 400)"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Components - Missing Components Array",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.LimitException: Too many SOQL queries\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/components",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "components"]
+            },
+            "description": "Test error handling when 'components' array is missing (should return 400)"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Analyze - Invalid Repository URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"error\": \"System.NullPointerException\",\n  \"repo\": \"invalid-url\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "analyze"]
+            },
+            "description": "Test error handling when repository URL is invalid (should return 400)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
