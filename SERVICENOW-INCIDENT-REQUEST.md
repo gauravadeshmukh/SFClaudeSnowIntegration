@@ -72,6 +72,7 @@ Content-Type: application/json
     "incidentSysId": "abc123def456...",
     "incidentUrl": "https://your-instance.service-now.com/nav_to.do?uri=incident.do?sys_id=abc123def456...",
     "attachmentSysId": "xyz789...",
+    "targetFile": "force-app/main/default/classes/AccountDataProcessor.cls",
     "analysisResults": {
       "errorInfo": {
         "type": "LimitException",
@@ -79,6 +80,26 @@ Content-Type: application/json
         "lineNumber": 156,
         "language": "apex",
         "className": "AccountDataProcessor"
+      },
+      "codeSnippet": {
+        "startLine": 151,
+        "endLine": 161,
+        "errorLine": 156,
+        "code": [
+          { "lineNumber": 151, "content": "    for (Account acc : accounts) {", "isError": false },
+          { "lineNumber": 152, "content": "        List<Contact> contacts = [SELECT Id FROM Contact WHERE AccountId = :acc.Id];", "isError": false },
+          { "lineNumber": 156, "content": "        List<Opportunity> opps = [SELECT Id FROM Opportunity WHERE AccountId = :acc.Id];", "isError": true }
+        ]
+      },
+      "codeContext": {
+        "hasNullCheck": false,
+        "variablesUsed": ["opps", "Opportunity", "AccountId", "acc", "Id"],
+        "methodCalls": [],
+        "insights": [
+          "SOQL query detected on this line",
+          "Loop detected",
+          "SOQL query inside a loop can cause governor limit exceptions"
+        ]
       },
       "recommendations": {
         "possibleCauses": [
@@ -103,6 +124,14 @@ Content-Type: application/json
   }
 }
 ```
+
+**Note:** The response now includes:
+- `targetFile` - The specific file analyzed (from error message)
+- `codeSnippet` - Code context around the error line
+- `codeContext` - Intelligent insights about the error line
+  - Variables used
+  - Method calls detected
+  - Pattern insights (SOQL in loop, null checks, etc.)
 
 ---
 
