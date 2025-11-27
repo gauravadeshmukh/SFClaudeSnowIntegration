@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: error-analyzer-api
+    env: node
+    plan: free
+    buildCommand: echo "No build needed - using Node.js built-ins only"
+    startCommand: node api-server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0
+      - key: DEFAULT_REPO
+        value: https://github.com/gauravadeshmukh/agentforcedemo/tree/master
+      # Add these if using ServiceNow:
+      # - key: SNOW_INSTANCE
+      #   sync: false
+      # - key: SNOW_USERNAME
+      #   sync: false
+      # - key: SNOW_PASSWORD
+      #   sync: false
+    healthCheckPath: /api/health
