@@ -155,7 +155,7 @@ async function testCreateIncidentLocal(client) {
   console.log('TEST 4: Create Incident (Local Mode)');
   console.log('='.repeat(80));
 
-  const errorMessage = 'System.LimitException: Too many SOQL queries: 101. Class.DataProcessor.process: line 156, column 1';
+  const errorMessage = '### Input Data:* **Exception Message: Invalid id: 12312312312* **Line Number: 16* **Exception Type: System.StringException * **Stack Trace: Class.AccountTriggerHandler.handleTrigger: line 16, column 1 Trigger.AccountTrigger: line 2, column 1';
 
   try {
     const response = await client.post('/api/incident/create', {

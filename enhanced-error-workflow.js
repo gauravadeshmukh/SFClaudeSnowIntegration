@@ -105,6 +105,12 @@ class EnhancedErrorWorkflow {
       } else if (errorInfo.type === 'DmlException') {
         errorInfo.category = 'database';
         errorInfo.severity = 'high';
+      } else if (errorInfo.type === 'StringException') {
+        errorInfo.category = 'data-validation';
+        errorInfo.severity = 'high';
+      } else if (errorInfo.type === 'QueryException') {
+        errorInfo.category = 'database';
+        errorInfo.severity = 'high';
       }
     }
     // JavaScript/TypeScript errors
@@ -362,6 +368,20 @@ class EnhancedErrorWorkflow {
     if (!analysis.rootCause) {
       analysis.rootCause = this.getRuleBasedRootCause(errorInfo);
       analysis.recommendations = this.getRuleBasedRecommendations(errorInfo);
+
+      // Add best practices for common error types
+      analysis.bestPractices = this.getRuleBasedBestPractices(errorInfo);
+
+      // Add prevention strategy
+      analysis.preventionStrategy = this.getRuleBasedPreventionStrategy(errorInfo);
+
+      console.log('Rule-based Analysis Results:');
+      console.log('\nRoot Cause:');
+      console.log(analysis.rootCause);
+      console.log('\nRecommendations:');
+      analysis.recommendations.forEach((rec, i) => {
+        console.log(`  ${i + 1}. ${rec}`);
+      });
     }
 
     // Generate fix approach
@@ -547,6 +567,7 @@ class EnhancedErrorWorkflow {
       'NullPointerException': 'Attempted to access a property or method on a null object reference.',
       'LimitException': 'Exceeded Salesforce governor limits (SOQL queries, DML statements, CPU time, etc.).',
       'DmlException': 'Database operation failed due to validation rules, required fields, or constraints.',
+      'StringException': `Invalid String operation or format. Common causes:\n- Invalid ID format (IDs must be 15 or 18 characters)\n- String conversion failure\n- Invalid type cast from String\n- Malformed data in String field\n\nSpecific to this error (Invalid id: ${errorInfo.message.match(/Invalid id: (\S+)/)?.[1] || 'unknown'}):\n- The ID "${errorInfo.message.match(/Invalid id: (\S+)/)?.[1] || 'unknown'}" is not a valid Salesforce ID\n- Salesforce IDs must be exactly 15 or 18 characters\n- The provided ID appears to be ${errorInfo.message.match(/Invalid id: (\S+)/)?.[1]?.length || 0} characters long`,
       'TypeError': 'Attempted to perform an operation on an incompatible type.',
       'ReferenceError': 'Attempted to access an undefined variable or function.',
       'SyntaxError': 'Code contains invalid syntax that prevents parsing.'
@@ -556,6 +577,8 @@ class EnhancedErrorWorkflow {
   }
 
   getRuleBasedRecommendations(errorInfo) {
+    const invalidId = errorInfo.message.match(/Invalid id: (\S+)/)?.[1];
+
     const recommendations = {
       'NullPointerException': [
         'Add null checks before accessing object properties',
@@ -572,18 +595,147 @@ class EnhancedErrorWorkflow {
         'Validate required fields before DML operations',
         'Review validation rules and triggers',
         'Use Database.insert/update with allOrNone=false for partial success'
+      ],
+      'StringException': [
+        'Validate ID format before using (must be 15 or 18 characters)',
+        `Add validation check:\n\`\`\`apex\nif (String.isNotBlank(idValue) && (idValue.length() == 15 || idValue.length() == 18)) {\n    // Safe to use ID\n} else {\n    throw new CustomException('Invalid ID format: ' + idValue);\n}\n\`\`\``,
+        'Use try-catch when converting strings to IDs to handle invalid formats gracefully',
+        `Check the source of ID "${invalidId || 'unknown'}" - it may be:\n  - User input that needs validation\n  - Data from external system requiring sanitization\n  - Hardcoded value that needs correction\n  - Query result that returned unexpected format`,
+        'Consider using Schema.SObjectType methods to validate object types',
+        'Add unit tests to verify ID validation logic with various invalid inputs'
       ]
     };
 
     return recommendations[errorInfo.type] || ['Review code logic and add appropriate error handling'];
   }
 
-  generateFixApproach(errorInfo, analysis) {
-    return {
-      immediate: 'Apply the suggested code fixes to resolve the error',
-      shortTerm: 'Add test coverage to prevent regression',
-      longTerm: analysis.preventionStrategy || 'Implement coding standards and static analysis'
+  getRuleBasedBestPractices(errorInfo) {
+    const bestPractices = {
+      'StringException': [
+        'Always validate Salesforce IDs before using them in queries or DML operations',
+        'Use try-catch blocks when converting user input or external data to IDs',
+        'Implement centralized ID validation utility methods',
+        'Add input validation at the API/service layer boundary',
+        'Use Schema.SObjectType to validate object types match expected IDs',
+        'Document expected ID formats in method parameters and variable names'
+      ],
+      'NullPointerException': [
+        'Always check for null before accessing object properties',
+        'Use Optional pattern or null-safe operators where available',
+        'Include all required fields in SOQL queries',
+        'Document null-handling expectations in method contracts'
+      ],
+      'LimitException': [
+        'Design all code to be bulk-safe from the start',
+        'Use collections for all data operations',
+        'Avoid SOQL/DML inside loops',
+        'Monitor governor limits in development and testing'
+      ],
+      'DmlException': [
+        'Validate all data before DML operations',
+        'Use Database class methods with proper error handling',
+        'Test with various data scenarios including edge cases',
+        'Document validation requirements clearly'
+      ]
     };
+
+    return bestPractices[errorInfo.type] || [
+      'Implement comprehensive error handling',
+      'Add appropriate logging for debugging',
+      'Write unit tests covering error scenarios',
+      'Document error handling approach in code comments'
+    ];
+  }
+
+  getRuleBasedPreventionStrategy(errorInfo) {
+    const strategies = {
+      'StringException': `Prevention Strategy for StringException:
+
+1. **Input Validation Layer**: Create a reusable utility class for ID validation
+   - Centralize all ID validation logic
+   - Validate length (15 or 18 characters)
+   - Validate format (alphanumeric)
+   - Validate object type if known
+
+2. **Defensive Programming**:
+   - Never trust user input or external data
+   - Always validate before using IDs in queries or DML
+   - Use try-catch for ID conversions
+
+3. **Code Review Checklist**:
+   - Review all places where IDs are accepted as input
+   - Ensure validation exists at entry points
+   - Check error messages are user-friendly
+
+4. **Testing Strategy**:
+   - Unit tests with invalid ID formats (too short, too long, special characters)
+   - Integration tests with real-world bad data scenarios
+   - Negative test cases for all ID validation paths
+
+5. **Static Analysis**:
+   - Use PMD or similar tools to detect missing validation
+   - Add custom rules for ID handling patterns
+   - Regular code audits for data validation
+
+Example Utility Method:
+\`\`\`apex
+public class IdValidator {
+    public static Boolean isValidId(String idValue) {
+        if (String.isBlank(idValue)) return false;
+        if (idValue.length() != 15 && idValue.length() != 18) return false;
+
+        try {
+            Id testId = (Id)idValue;
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static Id validateAndConvert(String idValue, String fieldName) {
+        if (!isValidId(idValue)) {
+            throw new CustomValidationException(
+                'Invalid ID format for ' + fieldName + ': ' + idValue
+            );
+        }
+        return (Id)idValue;
+    }
+}
+\`\`\``,
+      'NullPointerException': `Prevention Strategy for NullPointerException:
+- Implement null checks for all object property accesses
+- Use defensive programming patterns
+- Include relationship fields in SOQL queries when accessing them
+- Add comprehensive unit tests for null scenarios`,
+      'LimitException': `Prevention Strategy for LimitException:
+- Design all code to be bulkified from the start
+- Never put SOQL or DML inside loops
+- Use collections for data processing
+- Implement governor limit monitoring in tests`,
+      'DmlException': `Prevention Strategy for DmlException:
+- Validate all required fields before DML
+- Use Database methods with error handling
+- Test with various data scenarios
+- Review validation rules and triggers`
+    };
+
+    return strategies[errorInfo.type] || 'Implement comprehensive testing and code review processes to catch similar errors early.';
+  }
+
+  generateFixApproach(errorInfo, analysis) {
+    const immediate = errorInfo.type === 'StringException'
+      ? `Add ID validation in ${errorInfo.className}.${errorInfo.methodName} at line ${errorInfo.lineNumber}`
+      : 'Apply the suggested code fixes to resolve the error';
+
+    const shortTerm = errorInfo.type === 'StringException'
+      ? 'Add unit tests for invalid ID scenarios and create reusable ID validation utility'
+      : 'Add test coverage to prevent regression';
+
+    const longTerm = errorInfo.type === 'StringException'
+      ? 'Implement organization-wide ID validation standards and static analysis rules'
+      : (analysis.preventionStrategy || 'Implement coding standards and static analysis');
+
+    return { immediate, shortTerm, longTerm };
   }
 
   getLocalFilePath(githubPath) {
