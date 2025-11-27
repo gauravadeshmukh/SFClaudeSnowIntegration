@@ -2,7 +2,7 @@ services:
   - type: web
     name: error-analyzer-api
     env: node
-    plan: starter
+    plan: free
     buildCommand: echo "No build needed - using Node.js built-ins only"
     startCommand: node api-server.js
     region: oregon
