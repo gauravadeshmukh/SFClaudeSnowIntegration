@@ -215,11 +215,9 @@ class ServiceNowIntegration {
     description += `\nREPOSITORY:\n`;
     description += `- ${analysisResults.repository.owner}/${analysisResults.repository.name} (${analysisResults.repository.branch})\n`;
 
-    if (analysisResults.relevantFiles && analysisResults.relevantFiles.length > 0) {
-      description += `\nRELEVANT FILES:\n`;
-      analysisResults.relevantFiles.slice(0, 5).forEach((file, idx) => {
-        description += `${idx + 1}. ${file.path} (${file.reason})\n`;
-      });
+    if (analysisResults.targetFile) {
+      description += `\nTARGET FILE:\n`;
+      description += `- ${analysisResults.targetFile}\n`;
     }
 
     description += `\n${'='.repeat(80)}\n`;
@@ -301,13 +299,13 @@ class ServiceNowIntegration {
     report += `  Branch: ${analysisResults.repository.branch}\n`;
     report += `  URL: https://github.com/${analysisResults.repository.owner}/${analysisResults.repository.name}\n\n`;
 
-    if (analysisResults.relevantFiles && analysisResults.relevantFiles.length > 0) {
-      report += 'RELEVANT FILES IDENTIFIED:\n';
-      analysisResults.relevantFiles.forEach((file, idx) => {
-        report += `  ${idx + 1}. ${file.path}\n`;
-        report += `     Reason: ${file.reason}\n`;
-      });
-      report += '\n';
+    if (analysisResults.targetFile) {
+      report += 'TARGET FILE ANALYZED:\n';
+      report += `  File: ${analysisResults.targetFile}\n`;
+      report += `  (Specific file mentioned in error message)\n\n`;
+    } else {
+      report += 'TARGET FILE: Not found in repository\n';
+      report += '  (File mentioned in error may not exist in the specified repository)\n\n';
     }
 
     if (analysisResults.analysisResults && analysisResults.analysisResults.length > 0) {
@@ -317,14 +315,29 @@ class ServiceNowIntegration {
         report += '='.repeat(80) + '\n\n';
 
         if (analysis.codeSnippet) {
-          report += 'CODE SNIPPET:\n';
+          report += 'CODE SNIPPET (Error Context):\n';
           report += '-'.repeat(80) + '\n';
           analysis.codeSnippet.code.forEach(line => {
             const marker = line.isError ? '>>> ' : '    ';
             const lineNum = line.lineNumber.toString().padStart(4, ' ');
             report += `${marker}${lineNum}: ${line.content}\n`;
           });
-          report += '-'.repeat(80) + '\n\n';
+          report += '-'.repeat(80) + '\n';
+          report += `Error on line ${analysis.codeSnippet.errorLine}\n\n`;
+        }
+
+        if (analysis.codeContext && analysis.codeContext.insights.length > 0) {
+          report += 'CODE CONTEXT ANALYSIS:\n';
+          analysis.codeContext.insights.forEach((insight, i) => {
+            report += `  • ${insight}\n`;
+          });
+          if (analysis.codeContext.variablesUsed.length > 0) {
+            report += `  • Variables used: ${analysis.codeContext.variablesUsed.join(', ')}\n`;
+          }
+          if (analysis.codeContext.methodCalls.length > 0) {
+            report += `  • Method calls: ${analysis.codeContext.methodCalls.join(', ')}\n`;
+          }
+          report += '\n';
         }
 
         report += 'POSSIBLE CAUSES:\n';

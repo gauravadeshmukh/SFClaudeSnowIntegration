@@ -197,44 +197,130 @@ class ErrorAnalyzer {
 
   /**
    * Find relevant files in the repository based on error info
+   * Only searches for the SPECIFIC file/class mentioned in the error
    */
   async findRelevantFiles(errorInfo, repoTree) {
     const relevantFiles = [];
 
-    for (const item of repoTree.tree) {
-      if (item.type !== 'blob') continue;
+    // Priority 1: Direct file name match (exact match)
+    if (errorInfo.fileName) {
+      for (const item of repoTree.tree) {
+        if (item.type !== 'blob') continue;
+        const path = item.path;
 
-      const path = item.path;
-      const ext = path.split('.').pop().toLowerCase();
-
-      // Match by file name
-      if (errorInfo.fileName && path.includes(errorInfo.fileName)) {
-        relevantFiles.push({ path, priority: 1, reason: 'Direct file match' });
-        continue;
-      }
-
-      // Match by class name (Apex)
-      if (errorInfo.className && path.includes(errorInfo.className)) {
-        relevantFiles.push({ path, priority: 2, reason: 'Class name match' });
-        continue;
-      }
-
-      // Match by language
-      if (errorInfo.language === 'apex' && ['cls', 'trigger'].includes(ext)) {
-        relevantFiles.push({ path, priority: 3, reason: 'Same language file' });
-      } else if (errorInfo.language === 'javascript' && ext === 'js') {
-        relevantFiles.push({ path, priority: 3, reason: 'Same language file' });
+        // Exact file name match
+        if (path.endsWith(errorInfo.fileName)) {
+          relevantFiles.push({ path, priority: 1, reason: 'Exact file match from error' });
+        }
       }
     }
 
-    // Sort by priority
+    // Priority 2: Class name match (for Apex/Java)
+    if (errorInfo.className && relevantFiles.length === 0) {
+      for (const item of repoTree.tree) {
+        if (item.type !== 'blob') continue;
+        const path = item.path;
+        const fileName = path.split('/').pop();
+        const fileNameWithoutExt = fileName.split('.')[0];
+
+        // Exact class name match
+        if (fileNameWithoutExt === errorInfo.className) {
+          relevantFiles.push({ path, priority: 2, reason: 'Exact class match from error' });
+        }
+      }
+    }
+
+    // Priority 3: Method/Function name match (if class not found)
+    if (errorInfo.methodName && relevantFiles.length === 0) {
+      // Only search if we have a method name but no file yet
+      for (const item of repoTree.tree) {
+        if (item.type !== 'blob') continue;
+        const path = item.path;
+
+        if (path.includes(errorInfo.methodName)) {
+          relevantFiles.push({ path, priority: 3, reason: 'Method name match from error' });
+        }
+      }
+    }
+
+    // Sort by priority (lower number = higher priority)
     relevantFiles.sort((a, b) => a.priority - b.priority);
 
-    return relevantFiles.slice(0, 10); // Limit to top 10 files
+    // Return ONLY the most relevant files (max 2)
+    // This prevents scanning the entire codebase
+    return relevantFiles.slice(0, 2);
+  }
+
+  /**
+   * Analyze the specific line of code where the error occurred
+   * Provides context-aware insights based on actual code
+   */
+  analyzeErrorLineContext(errorLineContent, errorInfo) {
+    const context = {
+      hasNullCheck: false,
+      hasTryCatch: false,
+      variablesUsed: [],
+      methodCalls: [],
+      insights: []
+    };
+
+    const trimmedLine = errorLineContent.trim();
+
+    // Detect variable usage
+    const varMatches = trimmedLine.match(/\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b/g);
+    if (varMatches) {
+      context.variablesUsed = [...new Set(varMatches)].filter(v =>
+        !['if', 'for', 'while', 'return', 'new', 'class', 'public', 'private', 'static'].includes(v)
+      );
+    }
+
+    // Detect method calls
+    const methodMatches = trimmedLine.match(/([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/g);
+    if (methodMatches) {
+      context.methodCalls = methodMatches.map(m => m.replace(/\s*\($/, ''));
+    }
+
+    // Check for null checks
+    context.hasNullCheck = /!=\s*null|!==\s*null|null\s*!=|null\s*!==/.test(trimmedLine);
+
+    // Analyze for NullPointerException
+    if (errorInfo.type === 'NullPointerException') {
+      if (trimmedLine.includes('.') && !context.hasNullCheck) {
+        const objectAccess = trimmedLine.match(/([a-zA-Z_$][a-zA-Z0-9_$]*)\./g);
+        if (objectAccess) {
+          context.insights.push(`Line accesses properties/methods on: ${objectAccess.map(s => s.replace('.', '')).join(', ')}`);
+          context.insights.push('No null check detected before object access');
+        }
+      }
+
+      // Detect array/list access
+      if (trimmedLine.includes('[') && trimmedLine.includes(']')) {
+        context.insights.push('Array/List access detected - ensure collection is not empty');
+      }
+    }
+
+    // Analyze for SOQL queries (Apex)
+    if (trimmedLine.includes('[SELECT') || trimmedLine.includes('Database.query')) {
+      context.insights.push('SOQL query detected on this line');
+      if (errorInfo.type === 'LimitException') {
+        context.insights.push('SOQL query inside a loop can cause governor limit exceptions');
+      }
+    }
+
+    // Detect loops
+    if (/\bfor\s*\(/.test(trimmedLine) || /\bwhile\s*\(/.test(trimmedLine)) {
+      context.insights.push('Loop detected');
+      if (errorInfo.type === 'LimitException') {
+        context.insights.push('Ensure operations inside loop are bulkified');
+      }
+    }
+
+    return context;
   }
 
   /**
    * Analyze code and provide recommendations
+   * Focuses on the specific error context within the file
    */
   analyzeCodeAndRecommend(errorInfo, fileContent, filePath) {
     const recommendations = {
@@ -243,15 +329,16 @@ class ErrorAnalyzer {
       possibleCauses: [],
       suggestedFixes: [],
       bestPractices: [],
-      codeSnippet: null
+      codeSnippet: null,
+      codeContext: null
     };
 
-    // Extract code snippet around the error line
+    // Extract code snippet around the error line with more context
     if (errorInfo.lineNumber && fileContent) {
       const lines = fileContent.split('\n');
       const errorLine = errorInfo.lineNumber - 1;
-      const start = Math.max(0, errorLine - 3);
-      const end = Math.min(lines.length, errorLine + 4);
+      const start = Math.max(0, errorLine - 5); // Show 5 lines before
+      const end = Math.min(lines.length, errorLine + 6); // Show 5 lines after
 
       recommendations.codeSnippet = {
         startLine: start + 1,
@@ -263,6 +350,12 @@ class ErrorAnalyzer {
           isError: (start + idx + 1) === errorInfo.lineNumber
         }))
       };
+
+      // Perform context-aware analysis of the actual code at error line
+      const errorLineContent = lines[errorLine];
+      if (errorLineContent) {
+        recommendations.codeContext = this.analyzeErrorLineContext(errorLineContent, errorInfo);
+      }
     }
 
     // Analyze based on error type
@@ -429,6 +522,7 @@ class ErrorAnalyzer {
 
   /**
    * Main analysis method
+   * Only analyzes the SPECIFIC file/class mentioned in the error
    */
   async analyze(errorMessage) {
     console.log('\n=== Error Analysis Started ===\n');
@@ -439,41 +533,49 @@ class ErrorAnalyzer {
       const errorInfo = this.parseError(errorMessage);
       console.log(`Detected Error Type: ${errorInfo.type}`);
       console.log(`Language: ${errorInfo.language || 'Unknown'}`);
-      if (errorInfo.fileName) console.log(`File: ${errorInfo.fileName}:${errorInfo.lineNumber}`);
+      if (errorInfo.className) console.log(`Class: ${errorInfo.className}`);
+      if (errorInfo.fileName) console.log(`File: ${errorInfo.fileName}`);
+      if (errorInfo.lineNumber) console.log(`Line: ${errorInfo.lineNumber}`);
 
-      // Step 2: Fetch repository structure
-      console.log('\nStep 2: Fetching repository structure...');
+      // Step 2: Find the specific file mentioned in the error
+      console.log('\nStep 2: Searching for the specific file from error...');
       const repoTree = await this.fetchRepoTree();
-      console.log(`Found ${repoTree.tree.length} files in repository`);
-
-      // Step 3: Find relevant files
-      console.log('\nStep 3: Finding relevant files...');
       const relevantFiles = await this.findRelevantFiles(errorInfo, repoTree);
-      console.log(`Found ${relevantFiles.length} potentially relevant files`);
 
-      // Step 4: Analyze code and generate recommendations
-      console.log('\nStep 4: Analyzing code and generating recommendations...');
-      const analysisResults = [];
-
-      for (const file of relevantFiles.slice(0, 3)) { // Analyze top 3 files
-        try {
-          const content = await this.fetchFileContent(file.path);
-          const recommendations = this.analyzeCodeAndRecommend(errorInfo, content, file.path);
-          recommendations.matchReason = file.reason;
-          analysisResults.push(recommendations);
-        } catch (err) {
-          console.log(`Could not analyze ${file.path}: ${err.message}`);
-        }
+      if (relevantFiles.length > 0) {
+        console.log(`Found target file: ${relevantFiles[0].path}`);
+      } else {
+        console.log('Specific file not found in repository - providing general analysis');
       }
 
-      // If no specific file found, provide general recommendations
-      if (analysisResults.length === 0) {
-        analysisResults.push(this.analyzeCodeAndRecommend(errorInfo, null, 'General'));
+      // Step 3: Analyze ONLY the specific file mentioned in error
+      console.log('\nStep 3: Analyzing the specific file and generating recommendations...');
+      const analysisResults = [];
+
+      if (relevantFiles.length > 0) {
+        // Only analyze the first (most relevant) file
+        const targetFile = relevantFiles[0];
+        try {
+          console.log(`Fetching content of: ${targetFile.path}`);
+          const content = await this.fetchFileContent(targetFile.path);
+          const recommendations = this.analyzeCodeAndRecommend(errorInfo, content, targetFile.path);
+          recommendations.matchReason = targetFile.reason;
+          analysisResults.push(recommendations);
+          console.log(`Analysis complete for: ${targetFile.path}`);
+        } catch (err) {
+          console.log(`Could not fetch file ${targetFile.path}: ${err.message}`);
+          // Fallback to general recommendations
+          analysisResults.push(this.analyzeCodeAndRecommend(errorInfo, null, 'Not found in repository'));
+        }
+      } else {
+        // No specific file found, provide general recommendations
+        console.log('Providing general recommendations (file not found in repository)');
+        analysisResults.push(this.analyzeCodeAndRecommend(errorInfo, null, 'File not found in repository'));
       }
 
       return {
         errorInfo,
-        relevantFiles,
+        targetFile: relevantFiles.length > 0 ? relevantFiles[0].path : null,
         analysisResults,
         repository: {
           owner: this.repoOwner,
