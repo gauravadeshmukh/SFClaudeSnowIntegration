@@ -10,6 +10,7 @@ const url = require('url');
 const fs = require('fs');
 const ErrorAnalyzer = require('./error-analyzer');
 const ServiceNowIntegration = require('./servicenow-integration');
+const EnhancedErrorWorkflow = require('./enhanced-error-workflow');
 
 class ErrorAnalyzerAPI {
   constructor(config = {}) {
@@ -592,6 +593,122 @@ class ErrorAnalyzerAPI {
   }
 
   /**
+   * POST /api/workflow/process
+   * Enhanced workflow: Analyze, scan GitHub, locate components, and apply fixes
+   * This endpoint implements the complete 5-step workflow without git commits
+   */
+  async handleEnhancedWorkflow(req, res) {
+    try {
+      const body = await this.parseBody(req);
+      const { error, errorMessage, repo, repository, localWorkspace, applyFixes } = body;
+
+      const errorText = error || errorMessage;
+      const repoUrl = repo || repository || this.defaultRepo;
+
+      if (!errorText) {
+        return this.sendError(res, 400, 'Missing required field: error or errorMessage');
+      }
+
+      console.log(`[API] Enhanced workflow requested for error analysis...`);
+      console.log(`[API] Repository: ${repoUrl}`);
+      console.log(`[API] Apply fixes: ${applyFixes !== false ? 'YES' : 'NO'}`);
+
+      // Initialize enhanced workflow
+      const workflow = new EnhancedErrorWorkflow(repoUrl, {
+        claudeApiKey: process.env.ANTHROPIC_API_KEY,
+        useAI: process.env.USE_AI !== 'false',
+        localWorkspace: localWorkspace || process.cwd()
+      });
+
+      // Execute the complete workflow
+      const results = await workflow.processError(errorText);
+
+      if (!results.success) {
+        return this.sendError(res, 500, 'Workflow execution failed', results.error);
+      }
+
+      console.log(`[API] Enhanced workflow completed successfully`);
+
+      // Prepare response with all workflow results
+      const response = {
+        success: true,
+        message: 'Enhanced error analysis workflow completed',
+        workflow: {
+          steps: [
+            { step: 1, name: 'Error Analysis', status: 'completed' },
+            { step: 2, name: 'GitHub Repository Scan', status: 'completed' },
+            { step: 3, name: 'Affected Components', status: 'completed' },
+            { step: 4, name: 'Complete Analysis', status: 'completed' },
+            { step: 5, name: 'Apply Fixes', status: results.appliedChanges.length > 0 ? 'completed' : 'recommendations_only' }
+          ]
+        },
+        data: {
+          errorContext: {
+            type: results.errorInfo.type,
+            language: results.errorInfo.language,
+            severity: results.errorInfo.severity,
+            category: results.errorInfo.category,
+            file: results.errorInfo.fileName,
+            class: results.errorInfo.className,
+            method: results.errorInfo.methodName,
+            line: results.errorInfo.lineNumber
+          },
+          repositoryScan: {
+            primaryFile: results.scanResults.primaryFile ? {
+              path: results.scanResults.primaryFile.path,
+              url: results.scanResults.primaryFile.url
+            } : null,
+            relatedFiles: results.scanResults.relatedFiles.map(f => ({
+              path: f.path,
+              relationship: f.relationship,
+              reason: f.reason
+            })),
+            metadata: results.scanResults.metadata.map(m => m.path),
+            totalFiles: results.scanResults.totalFiles
+          },
+          affectedComponents: {
+            direct: results.affectedComponents.direct,
+            indirect: results.affectedComponents.indirect,
+            tests: results.affectedComponents.tests,
+            config: results.affectedComponents.config,
+            totalAffected: results.affectedComponents.direct.length + results.affectedComponents.indirect.length
+          },
+          analysis: {
+            rootCause: results.analysis.rootCause,
+            fixApproach: results.analysis.fixApproach,
+            recommendations: results.analysis.recommendations,
+            preventionStrategy: results.analysis.preventionStrategy,
+            bestPractices: results.analysis.bestPractices
+          },
+          appliedFixes: results.appliedChanges.map(change => ({
+            file: change.file,
+            changes: change.changes,
+            explanation: change.explanation
+          })),
+          summary: {
+            filesScanned: results.scanResults.totalFiles,
+            componentsAffected: results.affectedComponents.direct.length + results.affectedComponents.indirect.length,
+            fixesApplied: results.appliedChanges.length,
+            manualRecommendations: results.analysis.recommendations.length
+          }
+        },
+        warnings: [
+          '⚠️  Code changes have been applied to local workspace',
+          '⚠️  NO git commits have been made',
+          '⚠️  Review all changes carefully before committing',
+          '⚠️  Run tests to verify fixes work correctly'
+        ]
+      };
+
+      this.sendResponse(res, 200, response);
+
+    } catch (error) {
+      console.error('[API] Enhanced workflow error:', error.message);
+      this.sendError(res, 500, 'Enhanced workflow failed', error.message);
+    }
+  }
+
+  /**
    * Helper method to parse error information from error text
    */
   parseErrorInfo(errorText) {
@@ -678,6 +795,11 @@ class ErrorAnalyzerAPI {
         return this.handleAIStatus(req, res);
       }
 
+      // Enhanced workflow endpoint
+      if (path === '/api/workflow/process' && req.method === 'POST') {
+        return await this.handleEnhancedWorkflow(req, res);
+      }
+
       // 404 - Not Found
       this.sendError(res, 404, 'Endpoint not found', `${req.method} ${path} is not a valid endpoint`);
 
@@ -708,6 +830,8 @@ class ErrorAnalyzerAPI {
       console.log(`   POST http://${this.host}:${this.port}/api/ai/fix`);
       console.log(`   POST http://${this.host}:${this.port}/api/ai/components`);
       console.log(`   GET  http://${this.host}:${this.port}/api/ai/status`);
+      console.log(`\n⚡ Enhanced Workflow:`);
+      console.log(`   POST http://${this.host}:${this.port}/api/workflow/process`);
       console.log(`\n🔧 Configuration:`);
       console.log(`   AI Analysis: ${process.env.ANTHROPIC_API_KEY ? '✓ Enabled' : '✗ Disabled (set ANTHROPIC_API_KEY)'}`);
       console.log(`   ServiceNow: ${this.snowConfig ? '✓ Configured' : '✗ Not configured (local mode)'}`);
