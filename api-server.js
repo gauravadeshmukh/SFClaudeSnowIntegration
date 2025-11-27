@@ -203,6 +203,8 @@ class ErrorAnalyzerAPI {
       // Step 2: Create incident or save locally
       let incidentResult;
 
+      console.log('****'+this.snowConfig);
+
       if (localOnly || !this.snowConfig) {
         // Local mode
         console.log(`[API] Saving report locally...`);
@@ -262,6 +264,7 @@ class ErrorAnalyzerAPI {
 
         console.log(`[API] Incident created: ${snowResult.incidentNumber}`);
       }
+
 
       this.sendResponse(res, 201, {
         success: true,
@@ -408,7 +411,7 @@ class ErrorAnalyzerAPI {
 // CLI execution
 if (require.main === module) {
   const args = process.argv.slice(2);
-
+  console.log('**process.env.SNOW_CONFIG_PATH***'+process.env.SNOW_CONFIG_PATH);
   // Parse command line arguments with environment variable fallbacks
   let port = process.env.PORT || 3000;
   let host = process.env.HOST || 'localhost';
