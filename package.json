@@ -1,7 +1,7 @@
 {
   "name": "error-analyzer",
-  "version": "1.0.0",
-  "description": "Analyzes error messages and exceptions against GitHub codebase to provide fixes and recommendations",
+  "version": "2.0.0",
+  "description": "AI-powered error analyzer using Claude AI to analyze code errors against GitHub codebase",
   "main": "api-server.js",
   "scripts": {
     "start": "node api-server.js",
@@ -21,16 +21,22 @@
     "apex",
     "javascript",
     "api",
-    "servicenow"
+    "servicenow",
+    "ai",
+    "claude",
+    "anthropic"
   ],
   "author": "",
   "license": "MIT",
   "engines": {
-    "node": ">=12.0.0",
-    "npm": ">=6.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/gauravadeshmukh/SFClaudeSnowIntegration.git"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1"
   }
 }

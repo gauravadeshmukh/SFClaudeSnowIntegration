@@ -133,25 +133,36 @@ class ErrorAnalyzerAPI {
 
       console.log(`[API] Analyzing error...`);
 
-      const analyzer = new ErrorAnalyzer(repoUrl);
+      const analyzer = new ErrorAnalyzer(repoUrl, {
+        claudeApiKey: process.env.ANTHROPIC_API_KEY,
+        useAI: process.env.USE_AI !== 'false'
+      });
       const results = await analyzer.analyze(errorText);
 
       console.log(`[API] Analysis completed. Error Type: ${results.errorInfo.type}`);
 
       this.sendResponse(res, 200, {
         success: true,
-        message: 'Error analysis completed',
+        message: results.aiPowered ? 'AI-powered analysis completed' : 'Rule-based analysis completed',
+        aiPowered: results.aiPowered,
+        aiModel: results.aiModel,
         data: {
           errorInfo: results.errorInfo,
+          targetFile: results.targetFile,
           repository: results.repository,
-          relevantFiles: results.relevantFiles,
           analysisResults: results.analysisResults.map(a => ({
             filePath: a.filePath,
             errorType: a.errorType,
+            matchReason: a.matchReason,
             possibleCauses: a.possibleCauses,
             suggestedFixes: a.suggestedFixes,
             bestPractices: a.bestPractices,
-            codeSnippet: a.codeSnippet
+            rootCauseAnalysis: a.rootCauseAnalysis,
+            preventionStrategy: a.preventionStrategy,
+            relatedComponents: a.relatedComponents,
+            codeSnippet: a.codeSnippet,
+            codeContext: a.codeContext,
+            aiAnalysisError: a.aiAnalysisError
           }))
         }
       });
@@ -194,8 +205,11 @@ class ErrorAnalyzerAPI {
 
       console.log(`[API] Creating incident for error...`);
 
-      // Step 1: Analyze error
-      const analyzer = new ErrorAnalyzer(repoUrl);
+      // Step 1: Analyze error (with AI if API key is set)
+      const analyzer = new ErrorAnalyzer(repoUrl, {
+        claudeApiKey: process.env.ANTHROPIC_API_KEY,
+        useAI: process.env.USE_AI !== 'false'  // Can disable with USE_AI=false
+      });
       const analysisResults = await analyzer.analyze(errorText);
 
       console.log(`[API] Analysis completed. Error Type: ${analysisResults.errorInfo.type}`);

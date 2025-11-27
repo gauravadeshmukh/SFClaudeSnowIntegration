@@ -1,18 +1,29 @@
 /**
  * Error Analyzer System
- * Analyzes errors/exceptions against a GitHub codebase and provides fixes and recommendations
+ * AI-Powered error analysis using Claude AI + GitHub codebase context
  */
 
 const https = require('https');
 const http = require('http');
+const ClaudeAIAnalyzer = require('./claude-ai-analyzer');
 
 class ErrorAnalyzer {
-  constructor(githubRepo) {
+  constructor(githubRepo, options = {}) {
     this.githubRepo = githubRepo;
     this.repoOwner = null;
     this.repoName = null;
     this.branch = 'master';
     this.codebaseCache = new Map();
+
+    // Initialize Claude AI analyzer
+    this.claudeAnalyzer = new ClaudeAIAnalyzer(options.claudeApiKey);
+    this.useAI = options.useAI !== false && this.claudeAnalyzer.isEnabled();
+
+    if (this.useAI) {
+      console.log('✓ AI-powered analysis ENABLED (using Claude AI)');
+    } else {
+      console.log('ℹ AI-powered analysis DISABLED (using rule-based analysis)');
+    }
 
     this.parseRepoUrl(githubRepo);
   }
@@ -551,6 +562,7 @@ class ErrorAnalyzer {
       // Step 3: Analyze ONLY the specific file mentioned in error
       console.log('\nStep 3: Analyzing the specific file and generating recommendations...');
       const analysisResults = [];
+      let aiAnalysis = null;
 
       if (relevantFiles.length > 0) {
         // Only analyze the first (most relevant) file
@@ -558,10 +570,50 @@ class ErrorAnalyzer {
         try {
           console.log(`Fetching content of: ${targetFile.path}`);
           const content = await this.fetchFileContent(targetFile.path);
-          const recommendations = this.analyzeCodeAndRecommend(errorInfo, content, targetFile.path);
-          recommendations.matchReason = targetFile.reason;
-          analysisResults.push(recommendations);
-          console.log(`Analysis complete for: ${targetFile.path}`);
+
+          // Use AI-powered analysis if enabled
+          if (this.useAI) {
+            const recommendations = this.analyzeCodeAndRecommend(errorInfo, content, targetFile.path);
+
+            try {
+              console.log('🤖 Invoking Claude AI for intelligent analysis...');
+              aiAnalysis = await this.claudeAnalyzer.analyzeError(
+                errorInfo,
+                recommendations.codeSnippet,
+                targetFile.path,
+                {
+                  owner: this.repoOwner,
+                  name: this.repoName,
+                  branch: this.branch
+                }
+              );
+
+              // Merge AI analysis with rule-based recommendations
+              recommendations.aiAnalysis = aiAnalysis;
+              recommendations.possibleCauses = aiAnalysis.possibleCauses || recommendations.possibleCauses;
+              recommendations.suggestedFixes = aiAnalysis.suggestedFixes || recommendations.suggestedFixes;
+              recommendations.bestPractices = aiAnalysis.bestPractices || recommendations.bestPractices;
+              recommendations.rootCauseAnalysis = aiAnalysis.rootCauseAnalysis;
+              recommendations.preventionStrategy = aiAnalysis.preventionStrategy;
+              recommendations.relatedComponents = aiAnalysis.relatedComponents;
+
+              console.log('✓ AI analysis complete');
+            } catch (aiError) {
+              console.error('⚠️  AI analysis failed, using rule-based fallback:', aiError.message);
+              recommendations.aiAnalysisError = aiError.message;
+            }
+
+            recommendations.matchReason = targetFile.reason;
+            analysisResults.push(recommendations);
+            console.log(`Analysis complete for: ${targetFile.path}`);
+          } else {
+            // Use rule-based analysis
+            const recommendations = this.analyzeCodeAndRecommend(errorInfo, content, targetFile.path);
+            recommendations.matchReason = targetFile.reason;
+            analysisResults.push(recommendations);
+            console.log(`Analysis complete for: ${targetFile.path} (rule-based)`);
+          }
+
         } catch (err) {
           console.log(`Could not fetch file ${targetFile.path}: ${err.message}`);
           // Fallback to general recommendations
@@ -577,6 +629,8 @@ class ErrorAnalyzer {
         errorInfo,
         targetFile: relevantFiles.length > 0 ? relevantFiles[0].path : null,
         analysisResults,
+        aiPowered: this.useAI,
+        aiModel: this.useAI ? this.claudeAnalyzer.model : null,
         repository: {
           owner: this.repoOwner,
           name: this.repoName,

@@ -264,7 +264,15 @@ class ServiceNowIntegration {
     report += 'COMPREHENSIVE ERROR ANALYSIS REPORT\n';
     report += '='.repeat(80) + '\n\n';
 
-    report += `Generated: ${new Date().toISOString()}\n\n`;
+    report += `Generated: ${new Date().toISOString()}\n`;
+
+    // Add AI analysis indicator
+    if (analysisResults.aiPowered) {
+      report += `AI-Powered Analysis: YES (Model: ${analysisResults.aiModel})\n`;
+    } else {
+      report += `Analysis Method: Rule-based (AI disabled)\n`;
+    }
+    report += '\n';
 
     report += 'ORIGINAL ERROR MESSAGE:\n';
     report += '-'.repeat(80) + '\n';
@@ -340,6 +348,14 @@ class ServiceNowIntegration {
           report += '\n';
         }
 
+        // AI-Powered Root Cause Analysis
+        if (analysis.rootCauseAnalysis) {
+          report += 'ROOT CAUSE ANALYSIS (AI-Powered):\n';
+          report += '-'.repeat(80) + '\n';
+          report += analysis.rootCauseAnalysis + '\n';
+          report += '-'.repeat(80) + '\n\n';
+        }
+
         report += 'POSSIBLE CAUSES:\n';
         analysis.possibleCauses.forEach((cause, i) => {
           report += `  ${i + 1}. ${cause}\n`;
@@ -357,6 +373,21 @@ class ServiceNowIntegration {
           report += `  ${i + 1}. ${practice}\n`;
         });
         report += '\n';
+
+        // AI-Powered Prevention Strategy
+        if (analysis.preventionStrategy) {
+          report += 'PREVENTION STRATEGY (AI-Powered):\n';
+          report += analysis.preventionStrategy + '\n\n';
+        }
+
+        // Related Components
+        if (analysis.relatedComponents && analysis.relatedComponents.length > 0) {
+          report += 'RELATED COMPONENTS TO REVIEW:\n';
+          analysis.relatedComponents.forEach((comp, i) => {
+            report += `  ${i + 1}. ${comp}\n`;
+          });
+          report += '\n';
+        }
       });
     }
 
