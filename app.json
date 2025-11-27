@@ -1,7 +1,7 @@
 {
   "name": "Error Analyzer API",
   "description": "Intelligent error analysis system that analyzes errors against GitHub codebases and creates ServiceNow incidents",
-  "repository": "https://github.com/yourusername/error-analyzer",
+  "repository": "https://github.com/gauravadeshmukh/SFClaudeSnowIntegration",
   "logo": "https://raw.githubusercontent.com/yourusername/error-analyzer/main/logo.png",
   "keywords": [
     "error-analysis",
